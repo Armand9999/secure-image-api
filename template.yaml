@@ -1,0 +1,229 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: Secure Image Processing API
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 10
+    MemorySize: 256
+    Architectures:
+      - x86_64
+
+Resources:
+
+  ImageUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${AWS::StackName}-users"
+
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+
+      UsernameConfiguration:
+        CaseSensitive: false
+  
+  ImageUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "${AWS::StackName}-client"
+
+      UserPoolId: !Ref ImageUserPool
+
+      GenerateSecret: false
+
+      PreventUserExistenceErrors: ENABLED
+
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+  
+  SecureImageApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+
+      Auth:
+        DefaultAuthorizer: ImageCognitoAuthorizer
+
+        Authorizers:
+          ImageCognitoAuthorizer:
+            UserPoolArn: !GetAtt ImageUserPool.Arn
+  
+
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-${AWS::AccountId}-${AWS::Region}-images"
+
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+
+  ImagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-images"
+
+      BillingMode: PAY_PER_REQUEST
+
+      AttributeDefinitions:
+        - AttributeName: imageId
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: imageId
+          KeyType: HASH
+
+      SSESpecification:
+        SSEEnabled: true
+
+  CreateUploadFunction:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      CodeUri: src/functions/create-upload/dist/
+      Handler: handler.handler
+
+      Environment:
+        Variables:
+          IMAGES_BUCKET: !Sub "${AWS::StackName}-${AWS::AccountId}-${AWS::Region}-images"
+          IMAGES_TABLE: !Ref ImagesTable
+
+      Policies:
+        - Statement:
+            - Sid: UploadImages
+              Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub "arn:${AWS::Partition}:s3:::${AWS::StackName}-${AWS::AccountId}-${AWS::Region}-images/uploads/*"
+        - Statement:
+          - Sid: CreateImageRecord
+            Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource: !GetAtt ImagesTable.Arn
+
+      Events:
+        CreateUploadApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SecureImageApi
+            Path: /images
+            Method: post
+
+
+
+
+  ProcessImageFunction:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      CodeUri: src/functions/process-image/
+
+      Handler: app.lambda_handler
+
+      Runtime: python3.12
+
+      MemorySize: 1024
+      Timeout: 30
+
+      Environment:
+        Variables:
+          IMAGES_TABLE: !Ref ImagesTable
+
+      Policies:
+
+        - Statement:
+            - Sid: ReadUploadedImages
+              Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub "arn:${AWS::Partition}:s3:::${AWS::StackName}-${AWS::AccountId}-${AWS::Region}-images/uploads/*"
+
+        - Statement:
+            - Sid: WriteProcessedImages
+              Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub "arn:${AWS::Partition}:s3:::${AWS::StackName}-${AWS::AccountId}-${AWS::Region}-images/processed/*"
+
+        - Statement:
+            - Sid: UpdateImageRecord
+              Effect: Allow
+              Action:
+                - dynamodb:UpdateItem
+              Resource: !GetAtt ImagesTable.Arn
+
+      Events:
+        ImageUploaded:
+          Type: S3
+          Properties:
+            Bucket: !Ref ImagesBucket
+            Events: s3:ObjectCreated:*
+
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: uploads/
+
+  GetImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/functions/get-image/dist/
+      Handler: handler.handler
+
+      Environment:
+        Variables:
+          IMAGES_TABLE: !Ref ImagesTable
+
+      Policies:
+        - Statement:
+            - Sid: ReadImageRecord
+              Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt ImagesTable.Arn
+
+      Events:
+        GetImageApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SecureImageApi
+            Path: /images/{imageId}
+            Method: get
+        
+
+Outputs:
+
+  ImagesBucketName:
+    Description: Name of the S3 bucket for uploaded images
+    Value: !Ref ImagesBucket
+
+  ImagesTableName:
+    Description: Name of the DynamoDB images table
+    Value: !Ref ImagesTable
+  
+  UserPoolId:
+    Description: Cognito user pool ID
+    Value: !Ref ImageUserPool
+
+  UserPoolClientId:
+    Description: Cognito application client ID
+    Value: !Ref ImageUserPoolClient
+
+  ApiUrl:
+    Description: Secure Image API URL
+    Value: !Sub "https://${SecureImageApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/dev"

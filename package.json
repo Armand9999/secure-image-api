@@ -1,0 +1,37 @@
+{
+  "name": "secure-image-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "install:node" : "npm ci --prefix src/functions/create-upload & npm ci --prefix src/functions/get-image",
+
+    "test:create-upload": "npm --prefix src/functions/create-upload test",
+    "test:get-image": "npm --prefix src/functions/get-image test",
+    "test:node": "npm run test:create-upload && npm run test:get-image",
+
+    "build:create-upload": "npm --prefix src/functions/create-upload run build",
+    "build:get-image": "npm --prefix src/functions/get-image run build",
+    "build:node": "npm run build:create-upload && npm run build:get-image",
+
+    "test": "npm run test:node",
+    "build": "npm run build:node"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1108.0",
+    "@aws-sdk/client-s3": "^3.1106.0",
+    "@aws-sdk/lib-dynamodb": "^3.1108.0",
+    "@aws-sdk/s3-request-presigner": "^3.1106.0",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.162",
+    "@types/node": "^26.2.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

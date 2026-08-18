@@ -1,0 +1,5 @@
+{
+  "body": "{\"fileName\":\"test.jpg\",\"contentType\":\"image/jpeg\"}",
+  "pathParameters": null,
+  "httpMethod": "POST"
+}
