@@ -15,6 +15,19 @@ jobs:
     name: Test and Build
     runs-on: ubuntu-latest
 
+    env:
+      AWS_DEFAULT_REGION: ca-central-1
+      AWS_REGION: ca-central-1
+
+      # Dummy credentials used only so boto3 can initialize during unit tests.
+      # These are not real AWS credentials.
+      AWS_ACCESS_KEY_ID: testing
+      AWS_SECRET_ACCESS_KEY: testing
+      AWS_SESSION_TOKEN: testing
+
+      # Prevent boto3 from trying the EC2 instance-metadata service.
+      AWS_EC2_METADATA_DISABLED: "true"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,8 +56,7 @@ jobs:
       - name: Run Python unit tests
         run: |
           python -m pytest src/functions/process-image/tests -v
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
+        
 
       - name: Build TypeScript functions
         run: npm run build
