@@ -42,8 +42,9 @@ jobs:
 
       - name: Run Python unit tests
         run: |
-            export AWS_REGION=${{ env.AWS_REGION }}
-            python -m pytest src/functions/process-image/tests -v
+          python -m pytest src/functions/process-image/tests -v
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Build TypeScript functions
         run: npm run build
