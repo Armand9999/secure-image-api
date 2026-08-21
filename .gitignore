@@ -24,3 +24,9 @@ venv/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local IAM bootstrap files
+.github/aws-github-trust-policy.json
+
+# Local AWS IAM bootstrap
+.aws-bootstrap/
