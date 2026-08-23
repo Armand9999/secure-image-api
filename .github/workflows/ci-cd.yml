@@ -194,3 +194,10 @@ jobs:
 
             echo "API_URL=$API_URL" >> "$GITHUB_ENV"
             echo "USER_POOL_CLIENT_ID=$USER_POOL_CLIENT_ID" >> "$GITHUB_ENV"
+      - name: Validate deployment outputs
+        run: |
+            test -n "$API_URL"
+            test -n "$USER_POOL_CLIENT_ID"
+
+            echo "API endpoint discovered successfully."
+            echo "Cognito client discovered successfully."
