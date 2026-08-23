@@ -177,4 +177,20 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset
-            
+        
+      - name: Read deployed stack outputs
+        run: |
+            API_URL=$(aws cloudformation describe-stacks \
+            --stack-name "${{ vars.DEV_STACK_NAME }}" \
+            --region "${{ vars.AWS_REGION }}" \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
+            --output text)
+
+            USER_POOL_CLIENT_ID=$(aws cloudformation describe-stacks \
+            --stack-name "${{ vars.DEV_STACK_NAME }}" \
+            --region "${{ vars.AWS_REGION }}" \
+            --query "Stacks[0].Outputs[?OutputKey=='UserPoolClientId'].OutputValue" \
+            --output text)
+
+            echo "API_URL=$API_URL" >> "$GITHUB_ENV"
+            echo "USER_POOL_CLIENT_ID=$USER_POOL_CLIENT_ID" >> "$GITHUB_ENV"
