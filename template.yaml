@@ -11,7 +11,52 @@ Globals:
     Architectures:
       - x86_64
 
+Parameters:
+  AlarmNotificationEmail:
+    Type: String
+    Description: Email address that receives Secure Image API operational alerts
+
 Resources:
+
+  AlarmNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-alarms"
+      DisplayName: SecureImageApi
+  
+  AlarmEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlarmNotificationTopic
+      Protocol: email
+      Endpoint: !Ref AlarmNotificationEmail
+
+  AlarmNotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref AlarmNotificationTopic
+
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudWatchAlarmsToPublish
+            Effect: Allow
+
+            Principal:
+              Service: cloudwatch.amazonaws.com
+
+            Action:
+              - sns:Publish
+
+            Resource: !Ref AlarmNotificationTopic
+
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
+              ArnLike:
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:${AWS::StackName}-*"
 
   ImageUserPool:
     Type: AWS::Cognito::UserPool
@@ -242,6 +287,12 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
 
       TreatMissingData: notBreaching
+      
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+
+      OKActions:
+        - !Ref AlarmNotificationTopic
 
   ProcessImageThrottlesAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -267,6 +318,12 @@ Resources:
 
       TreatMissingData: notBreaching
 
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+
+      OKActions:
+        - !Ref AlarmNotificationTopic
+
   ApiGateway5xxAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -291,7 +348,13 @@ Resources:
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
 
-      TreatMissingData: notBreaching    
+      TreatMissingData: notBreaching  
+
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+
+      OKActions:
+        - !Ref AlarmNotificationTopic 
 
   ImageProcessingFailuresAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -315,7 +378,14 @@ Resources:
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
 
-      TreatMissingData: notBreaching      
+      TreatMissingData: notBreaching
+      
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+
+      OKActions:
+        - !Ref AlarmNotificationTopic
+
 
 Outputs:
 
@@ -362,3 +432,11 @@ Outputs:
   ImageProcessingFailuresAlarmArn:
     Description: ARN of the image processing workflow failures alarm
     Value: !GetAtt ImageProcessingFailuresAlarm.Arn
+  
+  AlarmNotificationTopicArn:
+    Description: SNS topic used for operational alarm notifications
+    Value: !Ref AlarmNotificationTopic
+
+  AlarmNotificationTopicName:
+    Description: SNS topic name used for operational alarm notifications
+    Value: !GetAtt AlarmNotificationTopic.TopicName

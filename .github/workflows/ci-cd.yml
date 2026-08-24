@@ -175,6 +175,7 @@ jobs:
             --s3-bucket "${{ vars.SAM_ARTIFACT_BUCKET }}" \
             --role-arn "${{ vars.CFN_EXECUTION_ROLE_ARN }}" \
             --capabilities CAPABILITY_IAM \
+            --parameter-overrides AlarmNotificationEmail="${{ vars.ALARM_NOTIFICATION_EMAIL }}" \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset
       
