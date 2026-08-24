@@ -25,6 +25,16 @@ done
 
 API_URL="${API_URL%/}"
 
+TEST_FILE_NAME="integration-test-${GITHUB_RUN_ID:-local}.png"
+
+CREATE_PAYLOAD=$(jq -n \
+  --arg fileName "$TEST_FILE_NAME" \
+  --arg contentType "image/png" \
+  '{
+    fileName: $fileName,
+    contentType: $contentType
+  }')
+
 TEMP_DIR=$(mktemp -d)
 
 cleanup() {
@@ -82,7 +92,7 @@ HTTP_STATUS=$(curl \
   --write-out "%{http_code}" \
   --request POST \
   --header "Content-Type: application/json" \
-  --data '{"contentType":"image/png"}' \
+  --data "$CREATE_PAYLOAD" \
   "$API_URL/images")
 
 if [[ "$HTTP_STATUS" != "401" ]]; then
@@ -124,7 +134,7 @@ HTTP_STATUS=$(curl \
   --request POST \
   --header "Authorization: Bearer $USER_1_TOKEN" \
   --header "Content-Type: application/json" \
-  --data '{"contentType":"image/png"}' \
+  --data "$CREATE_PAYLOAD" \
   "$API_URL/images")
 
 if [[ "$HTTP_STATUS" != "200" && "$HTTP_STATUS" != "201" ]]; then
