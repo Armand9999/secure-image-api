@@ -181,7 +181,7 @@ def process_record(record):
 
                 "processedSize":
                     len(
-                        processed_image.bytes
+                        processed_image["bytes"]
                     ),
             }
         )
