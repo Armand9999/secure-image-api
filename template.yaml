@@ -291,7 +291,31 @@ Resources:
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
 
-      TreatMissingData: notBreaching          
+      TreatMissingData: notBreaching    
+
+  ImageProcessingFailuresAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-image-processing-failures"
+      AlarmDescription: "Alarm when one or more image processing failures are recorded within 5 minutes"
+
+      Namespace: SecureImageApi
+      MetricName: ImageProcessingFailures
+
+      Dimensions:
+        - Name: Service
+          Value: process-image
+
+      Statistic: Sum
+      Period: 300
+
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+
+      TreatMissingData: notBreaching      
 
 Outputs:
 
@@ -330,3 +354,11 @@ Outputs:
   ApiGateway5xxAlarmArn:
     Description: ARN of the API Gateway 5XX alarm
     Value: !GetAtt ApiGateway5xxAlarm.Arn
+  
+  ImageProcessingFailuresAlarmName:
+    Description: CloudWatch alarm monitoring image processing workflow failures
+    Value: !Ref ImageProcessingFailuresAlarm
+
+  ImageProcessingFailuresAlarmArn:
+    Description: ARN of the image processing workflow failures alarm
+    Value: !GetAtt ImageProcessingFailuresAlarm.Arn
