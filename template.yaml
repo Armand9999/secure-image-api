@@ -243,7 +243,29 @@ Resources:
 
       TreatMissingData: notBreaching
 
-          
+  ProcessImageThrottlesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-process-image-throttles"
+      AlarmDescription: "Alarm when the image processing Lambda experiences invocation throttling"
+
+      Namespace: AWS/Lambda
+      MetricName: Throttles
+
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ProcessImageFunction
+
+      Statistic: Sum
+      Period: 300
+
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+
+      TreatMissingData: notBreaching          
 
 Outputs:
 
@@ -266,6 +288,10 @@ Outputs:
   ApiUrl:
     Description: Secure Image API URL
     Value: !Sub "https://${SecureImageApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/dev"
+  
+  ProcessImageThrottlesAlarmName:
+    Description: CloudWatch alarm monitoring image processor Lambda throttles
+    Value: !Ref ProcessImageThrottlesAlarm
   
   ProcessImageErrorsAlarmArn:
     Description: ARN of the image processor Lambda errors alarm
