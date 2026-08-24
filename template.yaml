@@ -265,6 +265,32 @@ Resources:
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
 
+      TreatMissingData: notBreaching
+
+  ApiGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-api-5xx-errors"
+      AlarmDescription: "Alarm when API Gateway returns one or more 5XX responses within 5 minutes"
+
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref SecureImageApi
+        - Name: Stage
+          Value: dev
+
+      Statistic: Sum
+      Period: 300
+
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+
       TreatMissingData: notBreaching          
 
 Outputs:
@@ -288,7 +314,7 @@ Outputs:
   ApiUrl:
     Description: Secure Image API URL
     Value: !Sub "https://${SecureImageApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/dev"
-  
+
   ProcessImageThrottlesAlarmName:
     Description: CloudWatch alarm monitoring image processor Lambda throttles
     Value: !Ref ProcessImageThrottlesAlarm
@@ -296,3 +322,11 @@ Outputs:
   ProcessImageErrorsAlarmArn:
     Description: ARN of the image processor Lambda errors alarm
     Value: !GetAtt ProcessImageErrorsAlarm.Arn
+  
+  ApiGateway5xxAlarmName:
+    Description: CloudWatch alarm monitoring API Gateway 5XX responses
+    Value: !Ref ApiGateway5xxAlarm
+
+  ApiGateway5xxAlarmArn:
+    Description: ARN of the API Gateway 5XX alarm
+    Value: !GetAtt ApiGateway5xxAlarm.Arn
