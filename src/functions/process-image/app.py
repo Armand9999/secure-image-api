@@ -1,6 +1,8 @@
 import io
 import os
 import urllib.parse
+import json
+import time
 
 from datetime import datetime, timezone
 
@@ -230,6 +232,12 @@ def process_record(record, request_id):
                 "stage": "processing",
                 "errorType": type(exc).__name__
             }
+        )
+
+        emit_processing_failure_metric(
+            image_id=image_id,
+            request_id=request_id,
+            error_type=type(exc).__name__
         )
 
         # Mark the image as failed without masking the original exception.
@@ -519,3 +527,46 @@ def transform_image(
         "processed_height":
             image.height,
     }
+
+def build_processing_failure_metric(
+    image_id: str,
+    request_id: str,
+    error_type: str
+) -> dict:
+    return {
+        "_aws": {
+            "Timestamp": int(time.time() * 1000),
+            "CloudWatchMetrics": [
+                {
+                    "Namespace": "SecureImageApi",
+                    "Dimensions": [["Service"]],
+                    "Metrics": [
+                        {
+                            "Name": "ImageProcessingFailures",
+                            "Unit": "Count",
+                            "StorageResolution": 60
+                        }
+                    ]
+                }
+            ]
+        },
+        "Service": "process-image",
+        "ImageProcessingFailures": 1,
+        "imageId": image_id,
+        "requestId": request_id,
+        "errorType": error_type
+    }
+
+
+def emit_processing_failure_metric(
+    image_id: str,
+    request_id: str,
+    error_type: str
+) -> None:
+    metric = build_processing_failure_metric(
+        image_id,
+        request_id,
+        error_type
+    )
+
+    print(json.dumps(metric))
