@@ -219,7 +219,30 @@ Resources:
             RestApiId: !Ref SecureImageApi
             Path: /images/{imageId}
             Method: get
-  
+
+  ProcessImageErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-process-image-errors"
+      AlarmDescription: "Alarm when the image processing Lambda records one or more execution errors within 5 minutes"
+
+      Namespace: AWS/Lambda
+      MetricName: Errors
+
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ProcessImageFunction
+
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+
+      TreatMissingData: notBreaching
+
           
 
 Outputs:
@@ -243,3 +266,7 @@ Outputs:
   ApiUrl:
     Description: Secure Image API URL
     Value: !Sub "https://${SecureImageApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/dev"
+  
+  ProcessImageErrorsAlarmArn:
+    Description: ARN of the image processor Lambda errors alarm
+    Value: !GetAtt ProcessImageErrorsAlarm.Arn
