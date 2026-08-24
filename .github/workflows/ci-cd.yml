@@ -194,6 +194,7 @@ jobs:
 
             echo "API_URL=$API_URL" >> "$GITHUB_ENV"
             echo "USER_POOL_CLIENT_ID=$USER_POOL_CLIENT_ID" >> "$GITHUB_ENV"
+
       - name: Validate deployment outputs
         run: |
             test -n "$API_URL"
@@ -201,3 +202,13 @@ jobs:
 
             echo "API endpoint discovered successfully."
             echo "Cognito client discovered successfully."
+            
+      - name: Run post-deployment integration tests
+        env:
+          TEST_USERNAME_1: ${{ vars.CI_TEST_USER_1 }}
+          TEST_PASSWORD_1: ${{ secrets.CI_TEST_USER_1_PASSWORD }}
+
+          TEST_USERNAME_2: ${{ vars.CI_TEST_USER_2 }}
+          TEST_PASSWORD_2: ${{ secrets.CI_TEST_USER_2_PASSWORD }}
+        run: |
+          bash scripts/integration-test.sh
