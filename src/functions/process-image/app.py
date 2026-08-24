@@ -50,24 +50,20 @@ def lambda_handler(event, context):
 
     request_id = context.aws_request_id
     
-    records = event.get(
-        "Records",
-        []
+    logger.info(
+        "Lambda invocation started",
+        extra={
+            "service": "process-image",
+            "requestId": request_id,
+            "recordCount": len(event.get("Records", []))
+        }
     )
-
-    print(
-        f"Request ID: {request_id}"
-    )
-
-    print(
-        f"Received {len(records)} S3 record(s)"
-    )
-
-    for record in records:
-        process_record(record)
+    
+    for record in event.get("Records", []):
+        process_record(record, request_id)
 
 
-def process_record(record):
+def process_record(record, request_id):
     bucket_name = (
         record["s3"]
         ["bucket"]
