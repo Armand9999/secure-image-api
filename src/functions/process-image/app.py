@@ -136,7 +136,7 @@ def process_record(record):
         s3.put_object(
             Bucket=bucket_name,
             Key=processed_key,
-            Body=processed_image.bytes,
+            Body=processed_image["bytes"],
             ContentType="image/jpeg",
         )
 
@@ -145,13 +145,13 @@ def process_record(record):
             image_id=image_id,
 
             detected_format=
-                processed_image.detected_format,
+                processed_image["detected_format"],
 
             original_width=
-                processed_image.original_width,
+                processed_image["original_width"],
 
             original_height=
-                processed_image.original_height,
+                processed_image["original_height"],
 
             original_file_size=
                 len(image_bytes),
@@ -160,7 +160,7 @@ def process_record(record):
                 processed_key,
 
             processed_file_size=
-                len(processed_image.bytes),
+                len(processed_image["bytes"]),
         )
 
 

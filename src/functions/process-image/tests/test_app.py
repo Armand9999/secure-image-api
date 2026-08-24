@@ -99,6 +99,14 @@ def test_resizes_large_image():
         == "JPEG"
     )
 
+def test_transform_image_returns_processed_bytes():
+    image_bytes = create_test_image(100, 100)
+
+    result = transform_image(image_bytes)
+
+    assert result["bytes"]
+    assert isinstance(result["bytes"], bytes)
+
 def test_does_not_enlarge_small_image():
 
     source = create_test_image(
