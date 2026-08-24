@@ -1,6 +1,7 @@
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
+  Context,
 } from "aws-lambda";
 
 import {
@@ -22,6 +23,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 
 import crypto from "crypto";
+import { logInfo } from "./logger";
 
 const s3Client = new S3Client({});
 
@@ -49,8 +51,16 @@ interface CreateUploadRequest {
 }
 
 export const handler = async (
-  event: APIGatewayProxyEvent
+  event: APIGatewayProxyEvent,
+  context: Context
 ): Promise<APIGatewayProxyResult> => {
+
+  const requestId = context.awsRequestId;
+
+  logInfo("Create upload request received", {
+    service: "create-upload",
+    requestId
+  });
 
   const userId =
   getAuthenticatedUserId(event);
@@ -60,6 +70,12 @@ export const handler = async (
       message: "Unauthorized",
     });
   }
+
+  logInfo("Authenticated upload request", {
+    service: "create-upload",
+    requestId,
+    userId
+  });
 
   try {
 
@@ -99,6 +115,15 @@ export const handler = async (
       `uploads/${imageId}.${extension}`;
 
     const now = new Date().toISOString();
+
+    logInfo("Image record initialized", {
+      service: "create-upload",
+      requestId,
+      imageId,
+      userId,
+      objectKey,
+      contentType: body.contentType
+    });
 
 
     const command = new PutObjectCommand({
@@ -141,6 +166,13 @@ export const handler = async (
           "attribute_not_exists(imageId)",
       })
     );
+
+    logInfo("Image metadata stored", {
+      service: "create-upload",
+      requestId,
+      imageId,
+      status: "PENDING_UPLOAD"
+    });
 
     return response(201, {
       imageId,

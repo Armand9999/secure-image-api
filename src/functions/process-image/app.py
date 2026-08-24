@@ -8,6 +8,11 @@ import boto3
 
 from PIL import Image, ImageOps
 
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 
 s3 = boto3.client("s3")
 
@@ -42,6 +47,7 @@ SUPPORTED_FORMATS = {
 
 
 def lambda_handler(event, context):
+    request_id = context.aws_request_id
     records = event.get(
         "Records",
         []
@@ -83,13 +89,15 @@ def process_record(record):
     )
 
 
-    print(
-        "Starting image processing",
-        {
+    logger.info(
+        "Image processing started",
+        extra={
+            "service": "process-image",
+            "requestId": request_id,
             "imageId": image_id,
-            "bucket": bucket_name,
+            "bucketName": bucket_name,
             "objectKey": object_key,
-            "size": object_size,
+            "stage": "processing"
         }
     )
 
@@ -122,6 +130,16 @@ def process_record(record):
             response["Body"].read()
         )
 
+        logger.info(
+            "Source image downloaded",
+            extra={
+                "service": "process-image",
+                "requestId": request_id,
+                "imageId": image_id,
+                "fileSize": len(image_bytes)
+            }
+        )
+
 
         
         processed_image = transform_image(image_bytes)
@@ -140,6 +158,16 @@ def process_record(record):
             ContentType="image/jpeg",
         )
 
+        logger.info(
+            "Processed image uploaded",
+            extra={
+                "service": "process-image",
+                "requestId": request_id,
+                "imageId": image_id,
+                "processedKey": processed_key,
+                "processedFileSize": len(transformed["bytes"])
+            }
+        )
 
         save_processed_metadata(
             image_id=image_id,
@@ -164,50 +192,33 @@ def process_record(record):
         )
 
 
-        print(
-            "Image processed successfully",
-            {
-                "imageId":
-                    image_id,
-
-                "source":
-                    object_key,
-
-                "destination":
-                    processed_key,
-
-                "originalSize":
-                    len(image_bytes),
-
-                "processedSize":
-                    len(
-                        processed_image["bytes"]
-                    ),
+        logger.info(
+            "Image processing completed",
+            extra={
+                "service": "process-image",
+                "requestId": request_id,
+                "imageId": image_id,
+                "status": "PROCESSED"
             }
         )
 
+        
 
-    except Exception as error:
 
-        print(
+    except Exception as exc:
+        logger.exception(
             "Image processing failed",
-            {
-                "imageId":
-                    image_id,
-
-                "objectKey":
-                    object_key,
-
-                "errorType":
-                    type(error)
-                    .__name__,
-
-                "error":
-                    str(error),
+            extra={
+                "service": "process-image",
+                "requestId": request_id,
+                "imageId": image_id,
+                "objectKey": object_key,
+                "stage": "processing",
+                "errorType": type(exc).__name__
             }
         )
 
-
+        # Mark the image as failed without masking the original exception.
         try:
 
             update_status(

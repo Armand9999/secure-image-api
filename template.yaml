@@ -115,6 +115,11 @@ Resources:
               - dynamodb:PutItem
             Resource: !GetAtt ImagesTable.Arn
 
+      LoggingConfig:
+        LogFormat: JSON
+        ApplicationLogLevel: INFO
+        SystemLogLevel: INFO
+
       Events:
         CreateUploadApi:
           Type: Api
@@ -166,6 +171,11 @@ Resources:
                 - dynamodb:UpdateItem
               Resource: !GetAtt ImagesTable.Arn
 
+      LoggingConfig:
+        LogFormat: JSON
+        ApplicationLogLevel: INFO
+        SystemLogLevel: INFO
+
       Events:
         ImageUploaded:
           Type: S3
@@ -197,6 +207,11 @@ Resources:
                 - dynamodb:GetItem
               Resource: !GetAtt ImagesTable.Arn
 
+      LoggingConfig:
+        LogFormat: JSON
+        ApplicationLogLevel: INFO
+        SystemLogLevel: INFO
+        
       Events:
         GetImageApi:
           Type: Api

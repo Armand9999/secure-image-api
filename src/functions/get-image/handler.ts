@@ -1,6 +1,7 @@
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
+  Context,
 } from "aws-lambda";
 
 import {
@@ -11,6 +12,7 @@ import {
   DynamoDBDocumentClient,
   GetCommand,
 } from "@aws-sdk/lib-dynamodb";
+import { logInfo, logWarn } from "./logger";
 
 
 const dynamoClient =
@@ -24,8 +26,11 @@ const documentClient =
 const IMAGES_TABLE = process.env.IMAGES_TABLE;
 
 export const handler = async (
-  event: APIGatewayProxyEvent
+  event: APIGatewayProxyEvent,
+  context: Context
 ): Promise<APIGatewayProxyResult> => {
+
+  const requestId = context.awsRequestId;
 
   const userId = getAuthenticatedUserId(event);
 
@@ -63,18 +68,43 @@ export const handler = async (
         })
       );
 
+    logInfo("Get image request received", {
+      service: "get-image",
+      requestId,
+      imageId
+    });
+
     if (!result.Item) {
+      logWarn("Image not found", {
+        service: "get-image",
+        requestId: context.awsRequestId,
+        imageId
+      });
+
       return response(404, {
         message: "Image not found",
       });
     }
 
     if (!ownsImage(result.Item, userId)) {
+      logWarn("Image access denied", {
+        service: "get-image",
+        requestId: context.awsRequestId,
+        imageId,
+        reason: "ownership_mismatch"
+      });
       return response(403, {
         message:
           "You are not authorized to access this image",
       });
     }
+
+    logInfo("Image retrieved", {
+      service: "get-image",
+      requestId: context.awsRequestId,
+      imageId,
+      status: result.Item.status
+    });
 
     return response(200, {
       image: result.Item,
