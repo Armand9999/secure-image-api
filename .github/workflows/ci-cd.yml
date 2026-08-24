@@ -177,6 +177,40 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset
+      
+      - name: Configure Lambda log retention
+        run: |
+          CREATE_UPLOAD_FUNCTION=$(aws cloudformation describe-stack-resource \
+            --stack-name "${{ vars.DEV_STACK_NAME }}" \
+            --logical-resource-id CreateUploadFunction \
+            --query "StackResourceDetail.PhysicalResourceId" \
+            --output text)
+
+          GET_IMAGE_FUNCTION=$(aws cloudformation describe-stack-resource \
+            --stack-name "${{ vars.DEV_STACK_NAME }}" \
+            --logical-resource-id GetImageFunction \
+            --query "StackResourceDetail.PhysicalResourceId" \
+            --output text)
+
+          PROCESS_IMAGE_FUNCTION=$(aws cloudformation describe-stack-resource \
+            --stack-name "${{ vars.DEV_STACK_NAME }}" \
+            --logical-resource-id ProcessImageFunction \
+            --query "StackResourceDetail.PhysicalResourceId" \
+            --output text)
+
+          aws logs put-retention-policy \
+            --log-group-name "/aws/lambda/$CREATE_UPLOAD_FUNCTION" \
+            --retention-in-days 14
+
+          aws logs put-retention-policy \
+            --log-group-name "/aws/lambda/$GET_IMAGE_FUNCTION" \
+            --retention-in-days 14
+
+          aws logs put-retention-policy \
+            --log-group-name "/aws/lambda/$PROCESS_IMAGE_FUNCTION" \
+            --retention-in-days 14
+
+          echo "Configured 14-day retention for Lambda log groups."
         
       - name: Read deployed stack outputs
         run: |

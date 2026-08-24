@@ -219,24 +219,8 @@ Resources:
             RestApiId: !Ref SecureImageApi
             Path: /images/{imageId}
             Method: get
-
-  CreateUploadLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${CreateUploadFunction}"
-      RetentionInDays: 14
-
-  GetImageLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${GetImageFunction}"
-      RetentionInDays: 14
-
-  ProcessImageLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ProcessImageFunction}"
-      RetentionInDays: 14        
+  
+          
 
 Outputs:
 
