@@ -47,13 +47,17 @@ SUPPORTED_FORMATS = {
 
 
 def lambda_handler(event, context):
+
+    request_id = context.aws_request_id
     
     records = event.get(
         "Records",
         []
     )
 
-    request_id = context.aws_request_id
+    print(
+        f"Request ID: {request_id}"
+    )
 
     print(
         f"Received {len(records)} S3 record(s)"
@@ -145,6 +149,18 @@ def process_record(record):
 
         
         processed_image = transform_image(image_bytes)
+
+        logger.info(
+            "Image transformation completed",
+            extra={
+                "service": "process-image",
+                "requestId": request_id,
+                "imageId": image_id,
+                "detectedFormat": processed_image["detected_format"],
+                "originalWidth": processed_image["original_width"],
+                "originalHeight": processed_image["original_height"]
+            }
+        )
 
 
         processed_key = (
