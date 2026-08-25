@@ -86,12 +86,12 @@ One or more ProcessImageFunction invocations failed during the alarm evaluation 
 
 ### Recent Processing Failures
 
-```sql
+```kql
 fields @timestamp, level, message, imageId, requestId, errorType
 | filter level = "ERROR"
 | sort @timestamp desc
-| limit 50```
-
+| limit 50
+```
 
 For a specific image:
 
@@ -100,26 +100,28 @@ For a specific image:
 
 Replace `IMAGE_ID` with the affected image ID.
 
-```sql
+```kql
 fields @timestamp, level, message, imageId, requestId, stage, status, errorType
 | filter imageId = "IMAGE_ID"
-| sort @timestamp asc```
-
+| sort @timestamp asc
+```
 
 For recent processing lifecycle events:
 
-```sql
+```kql
 fields @timestamp, level, message, imageId, stage, status
 | filter ispresent(imageId)
 | sort @timestamp desc
-| limit 100```
+| limit 100
+```
 
 For access-denied events in GetImageFunction:
-```sql
+```kql
 fields @timestamp, level, message, imageId, requestId, reason
 | filter message = "Image access denied"
 | sort @timestamp desc
-| limit 50```
+| limit 50
+```
 
 ### Processor Failure Decision Tree
 
@@ -270,21 +272,14 @@ Those are expected client/security responses and should not trigger the 5XX alar
 
 ### Get Processor Function Name
 
-*powershell*
-$ProcessFunctionName` = `aws cloudformation describe-stack-resource \`
-  --stack-name secure-image-api-dev \`
-  --logical-resource-id ProcessImageFunction \`
-  --query "StackResourceDetail.PhysicalResourceId" \`
-  --output text 
+```powershell
+$ProcessFunctionName = aws cloudformation describe-stack-resource `
+  --stack-name secure-image-api-dev `
+  --logical-resource-id ProcessImageFunction `
+  --query "StackResourceDetail.PhysicalResourceId" `
+  --output text
+```
 
-
-# Phase 8.6.9 — Add DynamoDB diagnostics
-
-Because DynamoDB represents the processing state machine, it is an important diagnostic source.
-
-Add:
-
-*markdown*
 ## DynamoDB Diagnostics
 
 For an affected image, inspect:
@@ -363,12 +358,12 @@ If both source and processed objects exist but DynamoDB is not PROCESSED:
 
 ### Check Stack State
 
-*powershell*
-aws cloudformation describe-stacks \`
-  --stack-name secure-image-api-dev \`
-  --query "Stacks[0].StackStatus" \`
+```powershell
+aws cloudformation describe-stacks `
+  --stack-name secure-image-api-dev `
+  --query "Stacks[0].StackStatus" `
   --output text
-
+```
 
 This is real operational knowledge gained during the project rather than generic documentation.
 
