@@ -18,3 +18,20 @@ sam validate --lint
 
 Build SAM application:
 sam build --use-container
+
+## Operations and Observability
+
+The application includes production-style observability and operational tooling:
+
+- structured JSON Lambda logging
+- correlation using image and request IDs
+- CloudWatch Logs Insights queries
+- managed log retention
+- Lambda/API Gateway native metrics
+- custom image-processing failure metrics
+- CloudWatch alarms
+- SNS alarm notifications
+- operational CloudWatch dashboard
+- incident-response runbook
+
+See [Operational Runbook](docs/OPERATIONS.md).
