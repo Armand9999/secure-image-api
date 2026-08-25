@@ -386,6 +386,224 @@ Resources:
       OKActions:
         - !Ref AlarmNotificationTopic
 
+  OperationalDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub "${AWS::StackName}-operations"
+
+      DashboardBody: !Sub
+        - |
+          {
+            "start": "-PT3H",
+            "periodOverride": "inherit",
+            "widgets": [
+              {
+                "type": "text",
+                "x": 0,
+                "y": 0,
+                "width": 24,
+                "height": 2,
+                "properties": {
+                  "markdown": "# Secure Image API — Dev Operations\nAPI health, Lambda processing health, application failures, and alarm status."
+                }
+              },
+
+              {
+                "type": "alarm",
+                "x": 0,
+                "y": 2,
+                "width": 24,
+                "height": 5,
+                "properties": {
+                  "title": "Operational Alarm Status",
+                  "alarms": [
+                    "${ProcessImageErrorsAlarmArn}",
+                    "${ProcessImageThrottlesAlarmArn}",
+                    "${ApiGateway5xxAlarmArn}",
+                    "${ImageProcessingFailuresAlarmArn}"
+                  ],
+                  "sortBy": "stateUpdatedTimestamp"
+                }
+              },
+
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 7,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "title": "API Requests",
+                  "region": "${AWS::Region}",
+                  "view": "timeSeries",
+                  "period": 300,
+                  "stat": "Sum",
+                  "metrics": [
+                    [
+                      "AWS/ApiGateway",
+                      "Count",
+                      "ApiName",
+                      "${ApiName}",
+                      "Stage",
+                      "dev",
+                      {
+                        "label": "Requests"
+                      }
+                    ]
+                  ]
+                }
+              },
+
+              {
+                "type": "metric",
+                "x": 12,
+                "y": 7,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "title": "API 5XX Errors",
+                  "region": "${AWS::Region}",
+                  "view": "timeSeries",
+                  "period": 300,
+                  "stat": "Sum",
+                  "metrics": [
+                    [
+                      "AWS/ApiGateway",
+                      "5XXError",
+                      "ApiName",
+                      "${ApiName}",
+                      "Stage",
+                      "dev",
+                      {
+                        "label": "5XX Errors"
+                      }
+                    ]
+                  ]
+                }
+              },
+
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 13,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "title": "Processor Invocations",
+                  "region": "${AWS::Region}",
+                  "view": "timeSeries",
+                  "period": 300,
+                  "stat": "Sum",
+                  "metrics": [
+                    [
+                      "AWS/Lambda",
+                      "Invocations",
+                      "FunctionName",
+                      "${ProcessImageFunctionName}",
+                      {
+                        "label": "Invocations"
+                      }
+                    ]
+                  ]
+                }
+              },
+
+              {
+                "type": "metric",
+                "x": 12,
+                "y": 13,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "title": "Processor Errors and Throttles",
+                  "region": "${AWS::Region}",
+                  "view": "timeSeries",
+                  "period": 300,
+                  "stat": "Sum",
+                  "metrics": [
+                    [
+                      "AWS/Lambda",
+                      "Errors",
+                      "FunctionName",
+                      "${ProcessImageFunctionName}",
+                      {
+                        "label": "Errors"
+                      }
+                    ],
+                    [
+                      ".",
+                      "Throttles",
+                      ".",
+                      ".",
+                      {
+                        "label": "Throttles"
+                      }
+                    ]
+                  ]
+                }
+              },
+
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 19,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "title": "Processor Duration",
+                  "region": "${AWS::Region}",
+                  "view": "timeSeries",
+                  "period": 300,
+                  "stat": "Average",
+                  "metrics": [
+                    [
+                      "AWS/Lambda",
+                      "Duration",
+                      "FunctionName",
+                      "${ProcessImageFunctionName}",
+                      {
+                        "label": "Average Duration"
+                      }
+                    ]
+                  ]
+                }
+              },
+
+              {
+                "type": "metric",
+                "x": 12,
+                "y": 19,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "title": "Image Processing Failures",
+                  "region": "${AWS::Region}",
+                  "view": "timeSeries",
+                  "period": 300,
+                  "stat": "Sum",
+                  "metrics": [
+                    [
+                      "SecureImageApi",
+                      "ImageProcessingFailures",
+                      "Service",
+                      "process-image",
+                      {
+                        "label": "Processing Failures"
+                      }
+                    ]
+                  ]
+                }
+              }
+            ]
+          }
+
+        - ProcessImageFunctionName: !Ref ProcessImageFunction
+          ProcessImageErrorsAlarmArn: !GetAtt ProcessImageErrorsAlarm.Arn
+          ProcessImageThrottlesAlarmArn: !GetAtt ProcessImageThrottlesAlarm.Arn
+          ApiGateway5xxAlarmArn: !GetAtt ApiGateway5xxAlarm.Arn
+          ImageProcessingFailuresAlarmArn: !GetAtt ImageProcessingFailuresAlarm.Arn
+          ApiName: !Sub "${AWS::StackName}-api"
+
 
 Outputs:
 
@@ -440,3 +658,7 @@ Outputs:
   AlarmNotificationTopicName:
     Description: SNS topic name used for operational alarm notifications
     Value: !GetAtt AlarmNotificationTopic.TopicName
+  
+  OperationalDashboardName:
+    Description: CloudWatch operational dashboard for the Secure Image API
+    Value: !Ref OperationalDashboard
