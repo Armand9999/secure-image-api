@@ -5,6 +5,7 @@ from io import BytesIO
 from PIL import Image
 from app import (
     transform_image,
+    get_xray_trace_id
 )
 
 from app import (
@@ -191,3 +192,17 @@ def test_failure_metric_does_not_use_high_cardinality_dimensions():
     assert "imageId" not in flattened_dimensions
     assert "requestId" not in flattened_dimensions
 
+
+def test_get_xray_trace_id(monkeypatch):
+    monkeypatch.setenv(
+        "_X_AMZN_TRACE_ID",
+        "Root=1-abc123-def456;Parent=1234567890abcdef;Sampled=1"
+    )
+
+    assert get_xray_trace_id() == "1-abc123-def456"
+
+
+def test_get_xray_trace_id_missing(monkeypatch):
+    monkeypatch.delenv("_X_AMZN_TRACE_ID", raising=False)
+
+    assert get_xray_trace_id() is None

@@ -92,6 +92,7 @@ def process_record(record, request_id):
         )
     )
 
+    trace_id = get_xray_trace_id()
 
     logger.info(
         "Image processing started",
@@ -101,6 +102,7 @@ def process_record(record, request_id):
             "imageId": image_id,
             "bucketName": bucket_name,
             "objectKey": object_key,
+            "traceId": trace_id,
             "stage": "processing"
         }
     )
@@ -570,3 +572,15 @@ def emit_processing_failure_metric(
     )
 
     print(json.dumps(metric))
+
+def get_xray_trace_id():
+    header = os.getenv("_X_AMZN_TRACE_ID")
+
+    if not header:
+        return None
+
+    for part in header.split(";"):
+        if part.startswith("Root="):
+            return part.removeprefix("Root=")
+
+    return None

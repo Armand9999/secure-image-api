@@ -57,9 +57,12 @@ export const handler = async (
 
   const requestId = context.awsRequestId;
 
+  const traceId = getXrayTraceId();
+
   logInfo("Create upload request received", {
     service: "create-upload",
-    requestId
+    requestId: context.awsRequestId,
+    traceId
   });
 
   const userId =
@@ -246,4 +249,18 @@ export function isAllowedContentType(
   return ALLOWED_CONTENT_TYPES.includes(
     contentType
   );
+}
+
+export function getXrayTraceId(): string | undefined {
+  const traceHeader = process.env._X_AMZN_TRACE_ID;
+
+  if (!traceHeader) {
+    return undefined;
+  }
+
+  const root = traceHeader
+    .split(";")
+    .find(part => part.startsWith("Root="));
+
+  return root?.substring("Root=".length);
 }

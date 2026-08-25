@@ -67,11 +67,14 @@ export const handler = async (
           },
         })
       );
+    
+    const traceId = getXrayTraceId();
 
     logInfo("Get image request received", {
       service: "get-image",
       requestId,
-      imageId
+      imageId,
+      traceId
     });
 
     if (!result.Item) {
@@ -162,4 +165,18 @@ export function ownsImage(
   return (
     image.userId === userId
   );
+}
+
+export function getXrayTraceId(): string | undefined {
+  const traceHeader = process.env._X_AMZN_TRACE_ID;
+
+  if (!traceHeader) {
+    return undefined;
+  }
+
+  const root = traceHeader
+    .split(";")
+    .find(part => part.startsWith("Root="));
+
+  return root?.substring("Root=".length);
 }

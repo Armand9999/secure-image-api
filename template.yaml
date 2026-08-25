@@ -96,6 +96,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: dev
+      TracingEnabled: true
 
       Auth:
         DefaultAuthorizer: ImageCognitoAuthorizer
@@ -140,6 +141,7 @@ Resources:
     Properties:
       CodeUri: src/functions/create-upload/dist/
       Handler: handler.handler
+      Tracing: Active
 
       Environment:
         Variables:
@@ -192,6 +194,7 @@ Resources:
       Environment:
         Variables:
           IMAGES_TABLE: !Ref ImagesTable
+      Tracing: Active
 
       Policies:
 
@@ -239,6 +242,7 @@ Resources:
     Properties:
       CodeUri: src/functions/get-image/dist/
       Handler: handler.handler
+      Tracing: Active
 
       Environment:
         Variables:
